@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: agent-starter-python
+Version: 1.0.0
+Summary: Simple voice AI assistant built with LiveKit Agents for Python
+Requires-Python: >=3.9
+License-File: LICENSE
+Requires-Dist: livekit-agents[assemblyai,deepgram,google,silero,turn-detector]~=1.2
+Requires-Dist: livekit-murf>=0.1.0
+Requires-Dist: livekit-plugins-noise-cancellation~=0.2
+Requires-Dist: python-dotenv
+Dynamic: license-file
