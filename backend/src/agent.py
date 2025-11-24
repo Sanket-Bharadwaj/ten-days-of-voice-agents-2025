@@ -228,8 +228,9 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STT(model="nova-3"),
         llm=google.LLM(model="gemini-2.5-flash"),
         tts=murf.TTS(
-            voice="en-US-natalie",
-            style="Promo",
+            # Use a male voice id — change to your preferred Murf voice.
+            voice="en-US-matthew",
+            style="Conversation",
             text_pacing=True,
         ),
         turn_detection=MultilingualModel(),
