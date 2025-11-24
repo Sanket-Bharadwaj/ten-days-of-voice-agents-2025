@@ -30,31 +30,64 @@ export const WelcomeView = ({
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
     <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
-        <WelcomeImage />
+      <div style={{
+        background: '#171821',
+        color: '#f2f4fc',
+        fontFamily: "'Inter', Arial, sans-serif",
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px'
+      }}>
+        <div style={{
+          background: '#23243c',
+          borderRadius: 20,
+          boxShadow: '0 2px 22px rgba(32,34,53,0.19)',
+          width: '100%',
+          maxWidth: 420,
+          padding: '48px 32px 38px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 34,
+          textAlign: 'center'
+        }}>
+          <div>
+            <div style={{fontSize: '1.44rem', color: '#8fdbeb', fontWeight: 700, marginBottom: 12}}>Welcome, Your Wellness Companion</div>
+            <div style={{fontSize: '1.05rem', color: '#bdc6d3', marginBottom: 12, lineHeight: 1.58}}>
+              Take a moment for yourself.<br />
+              Start a guided wellness check-in or voice reflection any time.
+            </div>
 
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Chat live with your voice AI agent
-        </p>
+            <button
+              onClick={onStartCall}
+              style={{
+                background: 'linear-gradient(90deg, #59e5a2 0%, #67bddc 100%)',
+                color: '#171821',
+                fontSize: '1.08rem',
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: 22,
+                padding: '14px 48px',
+                cursor: 'pointer',
+                marginTop: 16,
+                boxShadow: '0 2px 14px rgba(83,216,227,0.22)'
+              }}
+            >
+              {startButtonText}
+            </button>
+          </div>
 
-        <Button variant="primary" size="lg" onClick={onStartCall} className="mt-6 w-64 font-mono">
-          {startButtonText}
-        </Button>
-      </section>
+          <div style={{background: '#222338', borderRadius: 12, padding: '18px 16px', width: '100%', color: '#8fdbeb', fontSize: '1.01rem'}}>
+            Today's Reflection Prompt:<br />
+            <em>“What's one intention you have for today?”</em>
+          </div>
 
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
-        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Need help getting set up? Check out the{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents/start/voice-ai/"
-            className="underline"
-          >
-            Voice AI quickstart
-          </a>
-          .
-        </p>
+          <div style={{marginTop: 26, color: '#697ba6', fontSize: '0.97rem'}}>
+            Built for your AI Voice Agent Challenge · #MinimalWellness
+          </div>
+        </div>
       </div>
     </div>
   );
