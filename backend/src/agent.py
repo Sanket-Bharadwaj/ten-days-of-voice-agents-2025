@@ -1,53 +1,217 @@
-import logging
+import json
+import os
+from typing import Annotated, Literal, Optional
+from dataclasses import dataclass
 
 from dotenv import load_dotenv
+from pydantic import Field
 from livekit.agents import (
     Agent,
     AgentSession,
     JobContext,
     JobProcess,
-    MetricsCollectedEvent,
     RoomInputOptions,
     WorkerOptions,
     cli,
-    metrics,
-    tokenize,
-    # function_tool,
-    # RunContext
+    function_tool,
+    RunContext,
 )
 from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-logger = logging.getLogger("agent")
-
 load_dotenv(".env.local")
 
+# =========================
+# Knowledge Base
+# =========================
 
-class Assistant(Agent):
-    def __init__(self) -> None:
+CONTENT_FILE = "biology_content.json"
+
+DEFAULT_CONTENT = [
+    {
+        "id": "dna",
+        "title": "DNA",
+        "summary": (
+            "DNA (Deoxyribonucleic acid) is the molecule that carries genetic "
+            "instructions for the development and functioning of living organisms. "
+            "It is shaped like a double helix."
+        ),
+        "sample_question": "What is the full form of DNA and what is its structure called?",
+    },
+    {
+        "id": "cell",
+        "title": "The Cell",
+        "summary": (
+            "The cell is the basic structural, functional, and biological unit of all "
+            "known organisms. It is often called the 'building block of life'. "
+            "Organisms can be single-celled or multicellular."
+        ),
+        "sample_question": "What is the main difference between a Prokaryotic cell and a Eukaryotic cell?",
+    },
+    {
+        "id": "nucleus",
+        "title": "Nucleus",
+        "summary": (
+            "The nucleus is a membrane-bound organelle found in eukaryotic cells. "
+            "It contains the cell's chromosomes (DNA) and controls the cell's growth and reproduction."
+        ),
+        "sample_question": "Why is the nucleus often referred to as the 'brain' or 'control center' of the cell?",
+    },
+    {
+        "id": "cell_cycle",
+        "title": "Cell Cycle",
+        "summary": (
+            "The cell cycle is a series of events that takes place in a cell as it grows and divides. "
+            "It consists of Interphase (growth) and the Mitotic phase (division)."
+        ),
+        "sample_question": "In which phase of the cell cycle does the cell spend the most time?",
+    },
+]
+
+
+def load_content():
+    """Load biology content from JSON, generating it from DEFAULT_CONTENT if missing."""
+    try:
+        path = os.path.join(os.path.dirname(__file__), CONTENT_FILE)
+
+        if not os.path.exists(path):
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(DEFAULT_CONTENT, f, indent=4)
+
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    except Exception:
+        return []
+
+
+COURSE_CONTENT = load_content()
+
+# =========================
+# State Management
+# =========================
+
+
+@dataclass
+class TutorState:
+    current_topic_id: str | None = None
+    current_topic_data: dict | None = None
+    mode: Literal["learn", "quiz", "teach_back"] = "learn"
+
+    def set_topic(self, topic_id: str):
+        topic = next((item for item in COURSE_CONTENT if item["id"] == topic_id), None)
+        if topic:
+            self.current_topic_id = topic_id
+            self.current_topic_data = topic
+            return True
+        return False
+
+
+@dataclass
+class Userdata:
+    tutor_state: TutorState
+    agent_session: Optional[AgentSession] = None
+
+
+# =========================
+# Tools
+# =========================
+
+
+@function_tool
+async def select_topic(
+    ctx: RunContext[Userdata],
+    topic_id: Annotated[str, Field(description="The ID of the topic to study (e.g., 'dna', 'cell', 'nucleus')")],
+) -> str:
+    """Selects a topic to study from the available list."""
+    state = ctx.userdata.tutor_state
+    success = state.set_topic(topic_id.lower())
+
+    if success:
+        return (
+            f"Topic set to {state.current_topic_data['title']}. "
+            "Ask the user if they want to 'Learn', be 'Quizzed', or 'Teach it back'."
+        )
+    else:
+        available = ", ".join([t["id"] for t in COURSE_CONTENT])
+        return f"Topic not found. Available topics are: {available}"
+
+
+@function_tool
+async def set_learning_mode(
+    ctx: RunContext[Userdata],
+    mode: Annotated[str, Field(description="The mode to switch to: 'learn', 'quiz', or 'teach_back'")],
+) -> str:
+    """Switches the interaction mode and updates the agent's voice/persona."""
+
+    state = ctx.userdata.tutor_state
+    state.mode = mode.lower()
+    agent_session = ctx.userdata.agent_session
+
+    if agent_session and state.current_topic_data:
+        if state.mode == "learn":
+            agent_session.tts.update_options(voice="en-US-matthew", style="Promo")
+            instruction = f"Mode: LEARN. Explain: {state.current_topic_data['summary']}"
+        elif state.mode == "quiz":
+            agent_session.tts.update_options(voice="en-US-alicia", style="Conversational")
+            instruction = f"Mode: QUIZ. Ask this question: {state.current_topic_data['sample_question']}"
+        elif state.mode == "teach_back":
+            agent_session.tts.update_options(voice="en-US-ken", style="Promo")
+            instruction = (
+                "Mode: TEACH_BACK. Ask the user to explain the concept to you as if YOU are the beginner."
+            )
+        else:
+            return "Invalid mode."
+    else:
+        instruction = "Voice switch failed (Session or topic not found)."
+
+    return f"Switched to {state.mode} mode. {instruction}"
+
+
+@function_tool
+async def evaluate_teaching(
+    ctx: RunContext[Userdata],
+    user_explanation: Annotated[str, Field(description="The explanation given by the user during teach-back")],
+) -> str:
+    """Call this when the user has finished explaining a concept in 'teach_back' mode."""
+    return (
+        "Analyze the user's explanation. Give them a score out of 10 on accuracy and clarity, "
+        "and correct any mistakes."
+    )
+
+
+# =========================
+# Agent Definition
+# =========================
+
+
+class TutorAgent(Agent):
+    def __init__(self):
+        topic_list = ", ".join([f"{t['id']} ({t['title']})" for t in COURSE_CONTENT])
+
         super().__init__(
-            instructions="""You are a helpful voice AI assistant. The user is interacting with you via voice, even if you perceive the conversation as text.
-            You eagerly assist users with their questions by providing information from your extensive knowledge.
-            Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
-            You are curious, friendly, and have a sense of humor.""",
+            instructions=f"""
+            You are a Biology Tutor designed to help users master concepts like DNA and Cells.
+
+            AVAILABLE TOPICS: {topic_list}
+
+            YOU HAVE 3 MODES:
+            1. LEARN Mode (Voice: Matthew): You explain the concept clearly using the summary data.
+            2. QUIZ Mode (Voice: Alicia): You ask the user a specific question to test knowledge.
+            3. TEACH_BACK Mode (Voice: Ken): You pretend to be a student and ask the user to explain.
+
+            BEHAVIOR:
+            - Start by asking what topic they want to study.
+            - Use the `set_learning_mode` tool when the user asks to learn, take a quiz, or teach.
+            - In 'teach_back' mode, listen to their explanation and then use `evaluate_teaching` to give feedback.
+            """,
+            tools=[select_topic, set_learning_mode, evaluate_teaching],
         )
 
-    # To add tools, use the @function_tool decorator.
-    # Here's an example that adds a simple weather tool.
-    # You also have to add `from livekit.agents import function_tool, RunContext` to the top of this file
-    # @function_tool
-    # async def lookup_weather(self, context: RunContext, location: str):
-    #     """Use this tool to look up current weather information in the given location.
-    #
-    #     If the location is not supported by the weather service, the tool will indicate this. You must tell the user the location's weather is unavailable.
-    #
-    #     Args:
-    #         location: The location to look up weather information for (e.g. city name)
-    #     """
-    #
-    #     logger.info(f"Looking up weather for {location}")
-    #
-    #     return "sunny with a temperature of 70 degrees."
+
+# =========================
+# Entrypoint
+# =========================
 
 
 def prewarm(proc: JobProcess):
@@ -55,83 +219,33 @@ def prewarm(proc: JobProcess):
 
 
 async def entrypoint(ctx: JobContext):
-    # Logging setup
-    # Add any other context you want in all log entries here
-    ctx.log_context_fields = {
-        "room": ctx.room.name,
-    }
+    ctx.log_context_fields = {"room": ctx.room.name}
 
-    # Set up a voice AI pipeline using OpenAI, Cartesia, AssemblyAI, and the LiveKit turn detector
+    userdata = Userdata(tutor_state=TutorState())
+
     session = AgentSession(
-        # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
-        # See all available models at https://docs.livekit.io/agents/models/stt/
         stt=deepgram.STT(model="nova-3"),
-        # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
-        # See all available models at https://docs.livekit.io/agents/models/llm/
-        llm=google.LLM(
-                model="gemini-2.5-flash",
-            ),
-        # Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
-        # See all available models as well as voice selections at https://docs.livekit.io/agents/models/tts/
+        llm=google.LLM(model="gemini-2.5-flash"),
         tts=murf.TTS(
-                voice="en-US-matthew", 
-                style="Conversation",
-                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
-                text_pacing=True
-            ),
-        # VAD and turn detection are used to determine when the user is speaking and when the agent should respond
-        # See more at https://docs.livekit.io/agents/build/turns
+            voice="en-US-matthew",
+            style="Promo",
+            text_pacing=True,
+        ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
-        # allow the LLM to generate a response while waiting for the end of turn
-        # See more at https://docs.livekit.io/agents/build/audio/#preemptive-generation
-        preemptive_generation=True,
+        userdata=userdata,
     )
 
-    # To use a realtime model instead of a voice pipeline, use the following session setup instead.
-    # (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
-    # 1. Install livekit-agents[openai]
-    # 2. Set OPENAI_API_KEY in .env.local
-    # 3. Add `from livekit.plugins import openai` to the top of this file
-    # 4. Use the following session setup instead of the version above
-    # session = AgentSession(
-    #     llm=openai.realtime.RealtimeModel(voice="marin")
-    # )
+    userdata.agent_session = session
 
-    # Metrics collection, to measure pipeline performance
-    # For more information, see https://docs.livekit.io/agents/build/metrics/
-    usage_collector = metrics.UsageCollector()
-
-    @session.on("metrics_collected")
-    def _on_metrics_collected(ev: MetricsCollectedEvent):
-        metrics.log_metrics(ev.metrics)
-        usage_collector.collect(ev.metrics)
-
-    async def log_usage():
-        summary = usage_collector.get_summary()
-        logger.info(f"Usage: {summary}")
-
-    ctx.add_shutdown_callback(log_usage)
-
-    # # Add a virtual avatar to the session, if desired
-    # # For other providers, see https://docs.livekit.io/agents/models/avatar/
-    # avatar = hedra.AvatarSession(
-    #   avatar_id="...",  # See https://docs.livekit.io/agents/models/avatar/plugins/hedra
-    # )
-    # # Start the avatar and wait for it to join
-    # await avatar.start(session, room=ctx.room)
-
-    # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
-        agent=Assistant(),
+        agent=TutorAgent(),
         room=ctx.room,
         room_input_options=RoomInputOptions(
-            # For telephony applications, use `BVCTelephony` for best results
             noise_cancellation=noise_cancellation.BVC(),
         ),
     )
 
-    # Join the room and connect to the user
     await ctx.connect()
 
 
