@@ -1,0 +1,26 @@
+[
+    {
+        "question": "What does Horizon AI Academy offer?",
+        "answer": "We provide premium online courses on Voice AI development, Python automation, and practical AI skills for creators, developers, and founders. We also offer code templates and starter kits to help learners build real-world AI projects faster."
+    },
+    {
+        "question": "Who is the founder of Horizon AI Academy?",
+        "answer": "Horizon AI Academy was founded by Sanket Bharadwaj, who leads the vision, product direction, and AI education content for the academy."
+    },
+    {
+        "question": "What is the price of your Voice AI course?",
+        "answer": "Our 'Professional Voice AI Developer' course is priced at $499 and includes LiveKit, Deepgram, Google Gemini, and TTS/STT agent workflows."
+    },
+    {
+        "question": "Do you offer any free learning content?",
+        "answer": "Yes! Horizon publishes weekly tutorials, open-source projects, and free starter templates to help beginners get started without cost."
+    },
+    {
+        "question": "Do you offer consulting or custom AI agent development?",
+        "answer": "Yes. We help startups and small teams build custom voice agents for sales, support, onboarding, and automation workflows. Pricing varies based on project scope."
+    },
+    {
+        "question": "Do you provide certification?",
+        "answer": "Yes, students who complete the premium courses receive an industry-recognized digital certificate from Horizon AI Academy."
+    }
+]
