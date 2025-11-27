@@ -1,22 +1,8 @@
-import { Button } from '@/components/livekit/button';
+"use client";
 
-function WelcomeImage() {
-  return (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-fg0 mb-4 size-16"
-    >
-      <path
-        d="M15 24V40C15 40.7957 14.6839 41.5587 14.1213 42.1213C13.5587 42.6839 12.7956 43 12 43C11.2044 43 10.4413 42.6839 9.87868 42.1213C9.31607 41.5587 9 40.7957 9 40V24C9 23.2044 9.31607 22.4413 9.87868 21.8787C10.4413 21.3161 11.2044 21 12 21C12.7956 21 13.5587 21.3161 14.1213 21.8787C14.6839 22.4413 15 23.2044 15 24ZM22 5C21.2044 5 20.4413 5.31607 19.8787 5.87868C19.3161 6.44129 19 7.20435 19 8V56C19 56.7957 19.3161 57.5587 19.8787 58.1213C20.4413 58.6839 21.2044 59 22 59C22.7956 59 23.5587 58.6839 24.1213 58.1213C24.6839 57.5587 25 56.7957 25 56V8C25 7.20435 24.6839 6.44129 24.1213 5.87868C23.5587 5.31607 22.7956 5 22 5ZM32 13C31.2044 13 30.4413 13.3161 29.8787 13.8787C29.3161 14.4413 29 15.2044 29 16V48C29 48.7957 29.3161 49.5587 29.8787 50.1213C30.4413 50.6839 31.2044 51 32 51C32.7956 51 33.5587 50.6839 34.1213 50.1213C34.6839 49.5587 35 48.7957 35 48V16C35 15.2044 34.6839 14.4413 34.1213 13.8787C33.5587 13.3161 32.7956 13 32 13ZM42 21C41.2043 21 40.4413 21.3161 39.8787 21.8787C39.3161 22.4413 39 23.2044 39 24V40C39 40.7957 39.3161 41.5587 39.8787 42.1213C40.4413 42.6839 41.2043 43 42 43C42.7957 43 43.5587 42.6839 44.1213 42.1213C44.6839 41.5587 45 40.7957 45 40V24C45 23.2044 44.6839 22.4413 44.1213 21.8787C43.5587 21.3161 42.7957 21 42 21ZM52 17C51.2043 17 50.4413 17.3161 49.8787 17.8787C49.3161 18.4413 49 19.2044 49 20V44C49 44.7957 49.3161 45.5587 49.8787 46.1213C50.4413 46.6839 51.2043 47 52 47C52.7957 47 53.5587 46.6839 54.1213 46.1213C54.6839 45.5587 55 44.7957 55 44V20C55 19.2044 54.6839 18.4413 54.1213 17.8787C53.5587 17.3161 52.7957 17 52 17Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+import Image from "next/image";
+import React from "react";
+import { Button } from "@/components/livekit/button";
 
 interface WelcomeViewProps {
   startButtonText: string;
@@ -27,34 +13,172 @@ export const WelcomeView = ({
   startButtonText,
   onStartCall,
   ref,
-}: React.ComponentProps<'div'> & WelcomeViewProps) => {
+}: React.ComponentProps<"div"> & WelcomeViewProps) => {
   return (
     <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
-        <WelcomeImage />
-
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Chat live with your voice AI agent
-        </p>
-
-        <Button variant="primary" size="lg" onClick={onStartCall} className="mt-6 w-64 font-mono">
-          {startButtonText}
-        </Button>
-      </section>
-
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
-        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Need help getting set up? Check out the{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents/start/voice-ai/"
-            className="underline"
+      <div
+        style={{
+          minHeight: "100vh",
+          background:
+            "radial-gradient(circle at top, #1b3159 0, #050816 50%, #010209 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          fontFamily:
+            "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          color: "#f5f7ff",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 620,
+            borderRadius: 18,
+            overflow: "hidden",
+            boxShadow: "0 18px 55px rgba(0,0,0,0.65)",
+            border: "1px solid rgba(90,120,190,0.35)",
+            background:
+              "linear-gradient(140deg, rgba(8,15,30,0.95), rgba(7,13,28,0.97))",
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: "14px 22px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderBottom: "1px solid rgba(100,130,190,0.35)",
+              background:
+                "linear-gradient(90deg, rgba(0,43,92,0.95), rgba(0,86,163,0.95))",
+            }}
           >
-            Voice AI quickstart
-          </a>
-          .
-        </p>
+
+            <span
+              style={{
+                fontSize: 11,
+                color: "#d6e4ff",
+                background: "rgba(0,0,0,0.28)",
+                borderRadius: 999,
+                padding: "4px 10px",
+              }}
+            >
+              Secure Voice Demo
+            </span>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding: "26px 28px" }}>
+            <div style={{ marginBottom: 18 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.18em",
+                  color: "#89a1d7",
+                  marginBottom: 6,
+                }}
+              >
+                HDFC Bank · Fraud Monitoring
+              </div>
+
+              <h1
+                style={{
+                  fontSize: "1.55rem",
+                  fontWeight: 800,
+                  margin: 0,
+                  color: "#f9fbff",
+                  lineHeight: 1.3,
+                }}
+              >
+                Verify Card Activity Securely
+              </h1>
+
+              <p
+                style={{
+                  marginTop: 10,
+                  fontSize: 14,
+                  color: "#b8c7e4",
+                  lineHeight: 1.6,
+                }}
+              >
+                This demo simulates an HDFC Bank fraud alert call.  
+                The assistant helps you verify suspicious card transactions
+                by confirming your identity and checking if the flagged
+                transaction is <strong>safe</strong> or <strong>fraudulent</strong>.
+              </p>
+            </div>
+
+            {/* Steps info box */}
+            <div
+              style={{
+                padding: "14px 16px",
+                borderRadius: 14,
+                background:
+                  "linear-gradient(160deg, rgba(15,35,70,0.85), rgba(11,22,48,0.92))",
+                border: "1px solid rgba(95,130,210,0.45)",
+                color: "#dce6ff",
+                fontSize: 13,
+                lineHeight: 1.6,
+              }}
+            >
+              During the call, the agent will:
+              <ul style={{ marginTop: 8, paddingLeft: 18 }}>
+                <li>Confirm your name and security identifier</li>
+                <li>Read the suspicious transaction exactly as stored</li>
+                <li>Ask if you authorized the transaction</li>
+                <li>Mark it as <strong>safe</strong> or <strong>fraud</strong></li>
+              </ul>
+            </div>
+
+            {/* CTA */}
+            <div style={{ marginTop: 26 }}>
+              <Button
+                onClick={onStartCall}
+                style={{
+                  width: "100%",
+                  padding: "13px 18px",
+                  fontSize: 15,
+                  fontWeight: 600,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(90deg, #e31837 0%, #ff4b5c 40%, #ff6f78 100%)",
+                  color: "#ffffff",
+                  border: "none",
+                  boxShadow: "0 12px 30px rgba(227,24,55,0.45)",
+                }}
+              >
+                {startButtonText || "Start Verification Call"}
+              </Button>
+
+              <p
+                style={{
+                  marginTop: 12,
+                  fontSize: 11,
+                  color: "#8fa1c5",
+                  textAlign: "center",
+                }}
+              >
+                This is a demonstration for the Murf AI Voice Agent Challenge.
+                It does not connect to actual HDFC systems.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              padding: "10px 18px",
+              borderTop: "1px solid rgba(60,80,130,0.5)",
+              fontSize: 11,
+              color: "#7d8bb4",
+              textAlign: "center",
+            }}
+          >
+            HDFC Fraud Verification · Demo Experience · Day 6
+          </div>
+        </div>
       </div>
     </div>
   );
