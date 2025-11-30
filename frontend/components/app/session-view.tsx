@@ -1,63 +1,23 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
-import type { AppConfig } from '@/app-config';
-import { ChatTranscript } from '@/components/app/chat-transcript';
-import { PreConnectMessage } from '@/components/app/preconnect-message';
-import { TileLayout } from '@/components/app/tile-layout';
+import React, { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import type { AppConfig } from "@/app-config";
+import { ChatTranscript } from "@/components/app/chat-transcript";
+import { PreConnectMessage } from "@/components/app/preconnect-message";
+import { TileLayout } from "@/components/app/tile-layout";
 import {
   AgentControlBar,
   type ControlBarControls,
-} from '@/components/livekit/agent-control-bar/agent-control-bar';
-import { useChatMessages } from '@/hooks/useChatMessages';
-import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
-import { useDebugMode } from '@/hooks/useDebug';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '../livekit/scroll-area/scroll-area';
+} from "@/components/livekit/agent-control-bar/agent-control-bar";
+import { useChatMessages } from "@/hooks/useChatMessages";
+import { useConnectionTimeout } from "@/hooks/useConnectionTimout";
+import { useDebugMode } from "@/hooks/useDebug";
+import { ScrollArea } from "../livekit/scroll-area/scroll-area";
+import { cn } from "@/lib/utils";
 
-const MotionBottom = motion.create('div');
+const IN_DEVELOPMENT = process.env.NODE_ENV !== "production";
 
-const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
-const BOTTOM_VIEW_MOTION_PROPS = {
-  variants: {
-    visible: {
-      opacity: 1,
-      translateY: '0%',
-    },
-    hidden: {
-      opacity: 0,
-      translateY: '100%',
-    },
-  },
-  initial: 'hidden',
-  animate: 'visible',
-  exit: 'hidden',
-  transition: {
-    duration: 0.3,
-    delay: 0.5,
-    ease: 'easeOut',
-  },
-};
-
-interface FadeProps {
-  top?: boolean;
-  bottom?: boolean;
-  className?: string;
-}
-
-export function Fade({ top = false, bottom = false, className }: FadeProps) {
-  return (
-    <div
-      className={cn(
-        'from-background pointer-events-none h-4 bg-linear-to-b to-transparent',
-        top && 'bg-linear-to-b',
-        bottom && 'bg-linear-to-t',
-        className
-      )}
-    />
-  );
-}
 interface SessionViewProps {
   appConfig: AppConfig;
 }
@@ -65,7 +25,7 @@ interface SessionViewProps {
 export const SessionView = ({
   appConfig,
   ...props
-}: React.ComponentProps<'section'> & SessionViewProps) => {
+}: React.ComponentProps<"section"> & SessionViewProps) => {
   useConnectionTimeout(200_000);
   useDebugMode({ enabled: IN_DEVELOPMENT });
 
@@ -91,40 +51,102 @@ export const SessionView = ({
   }, [messages]);
 
   return (
-    <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
-      {/* Chat Transcript */}
+    <section
+      className={cn(
+        "relative flex h-screen w-full flex-col overflow-hidden bg-slate-950"
+      )}
+      {...props}
+    >
+      {/* Background */}
       <div
-        className={cn(
-          'fixed inset-0 grid grid-cols-1 grid-rows-1',
-          !chatOpen && 'pointer-events-none'
-        )}
-      >
-        <Fade top className="absolute inset-x-4 top-0 h-40" />
-        <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[180px]">
-          <ChatTranscript
-            hidden={!chatOpen}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at top left, rgba(56,189,248,0.14) 0%, transparent 55%), radial-gradient(circle at bottom right, rgba(168,85,247,0.18) 0%, transparent 65%), #020617",
+        }}
+      />
+
+      {/* CENTERED HEADER */}
+      <header className="relative z-10 flex items-center justify-center border-b border-slate-800/60 px-6 py-4">
+        <div className="text-center">
+          <h1 className="text-lg font-semibold tracking-[0.18em] text-slate-100 uppercase">
+            Jarvis · Voice Shopping Agent
+          </h1>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Describe what you want to buy. Jarvis handles the catalog, cart, and orders for you.
+          </p>
+        </div>
+      </header>
+
+      {/* MAIN CONTENT */}
+      <main className="relative z-10 flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-5xl">
+          <TileLayout chatOpen={chatOpen} />
+        </div>
+      </main>
+
+      {/* TRANSCRIPT */}
+      {chatOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+          className="relative z-20 border-t border-slate-800/60 bg-slate-950/98 backdrop-blur-md"
+        >
+          <div className="mx-auto max-w-5xl px-6 py-4">
+            <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
+              <span>Conversation transcript</span>
+              <span className="hidden text-[11px] text-slate-500 sm:inline">
+                Jarvis uses this history to resolve references like “the second laptop”,
+                “the black hoodie”, or “what did I just buy?”.
+              </span>
+            </div>
+            <ScrollArea ref={scrollAreaRef} className="max-h-[40vh]">
+              <ChatTranscript
+                messages={messages}
+                className="chat-transcript space-y-3 text-sm"
+              />
+            </ScrollArea>
+          </div>
+        </motion.div>
+      )}
+
+      {/* CONTROL BAR */}
+      <div className="relative z-30 border-t border-slate-800/70 bg-slate-950/98 px-6 py-4 backdrop-blur-md">
+        {appConfig.isPreConnectBufferEnabled && (
+          <PreConnectMessage
             messages={messages}
-            className="mx-auto max-w-2xl space-y-3 transition-opacity duration-300 ease-out"
+            className="mb-3 text-xs text-slate-400"
           />
-        </ScrollArea>
+        )}
+
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <div className="hidden flex-1 text-xs text-slate-400 md:block">
+            Try:{" "}
+            <span className="font-medium text-slate-200">
+              “Show me MacBook options under 1.2 lakh”
+            </span>{" "}
+            or{" "}
+            <span className="font-medium text-slate-200">
+              “Add the MacBook Air to my cart”
+            </span>
+          </div>
+          <div className="ml-auto">
+            <AgentControlBar
+              controls={controls}
+              onChatOpenChange={setChatOpen}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Tile Layout */}
-      <TileLayout chatOpen={chatOpen} />
-
-      {/* Bottom */}
-      <MotionBottom
-        {...BOTTOM_VIEW_MOTION_PROPS}
-        className="fixed inset-x-3 bottom-0 z-50 md:inset-x-12"
-      >
-        {appConfig.isPreConnectBufferEnabled && (
-          <PreConnectMessage messages={messages} className="pb-4" />
-        )}
-        <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
-          <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
-          <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
-        </div>
-      </MotionBottom>
+      {/* Transcript formatting */}
+      <style jsx global>{`
+        .chat-transcript {
+          white-space: pre-wrap;
+        }
+      `}</style>
     </section>
   );
 };
